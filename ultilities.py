@@ -10,9 +10,9 @@ def de_shadow(image):
     rA = image[:, :, 2]
 
     # dialting the image channels individually to spead the text to the background
-    dilated_image_bB = cv2.dilate(bA, np.ones((7,7), np.uint8))
-    dilated_image_gB = cv2.dilate(gA, np.ones((7,7), np.uint8))
-    dilated_image_rB = cv2.dilate(rA, np.ones((7,7), np.uint8))
+    dilated_image_bB = cv2.dilate(bA, np.ones((7, 7), np.uint8))
+    dilated_image_gB = cv2.dilate(gA, np.ones((7, 7), np.uint8))
+    dilated_image_rB = cv2.dilate(rA, np.ones((7, 7), np.uint8))
 
     # blurring the image to get the backround image
     bB = cv2.medianBlur(dilated_image_bB, 21)
@@ -21,20 +21,20 @@ def de_shadow(image):
 
     # blend_modes library works with 4 channels, the last channel being the alpha channel
     # so we add one alpha channel to our image and the background image each
-    image = np.dstack((image, np.ones((image.shape[0], image.shape[1], 1))*255))
+    image = np.dstack((image, np.ones((image.shape[0], image.shape[1], 1)) * 255))
     image = image.astype(float)
-    dilate = [bB,gB,rB]
+    dilate = [bB, gB, rB]
     dilate = cv2.merge(dilate)
-    dilate = np.dstack((dilate, np.ones((image.shape[0], image.shape[1], 1))*255))
+    dilate = np.dstack((dilate, np.ones((image.shape[0], image.shape[1], 1)) * 255))
     dilate = dilate.astype(float)
 
     # now we divide the image with the background image
     # without rescaling i.e scaling factor = 1.0
-    blend = divide(image,dilate,1.0)
+    blend = divide(image, dilate, 1.0)
     blendb = blend[:, :, 0]
     blendg = blend[:, :, 1]
     blendr = blend[:, :, 2]
-    blend_planes = [blendb,blendg,blendr]
+    blend_planes = [blendb, blendg, blendr]
     blend = cv2.merge(blend_planes)
     # blend = blend*0.85
     blend = np.uint8(blend)
@@ -56,7 +56,14 @@ def biggest_contour(contours):
     return biggest, max_area
 
 
-def get_contours(bgr_image, canny_threshold=(100, 200), min_area=500, shadow_free=False, show_canny=False, draw_cont=False):
+def get_contours(
+    bgr_image,
+    canny_threshold=(100, 200),
+    min_area=500,
+    shadow_free=False,
+    show_canny=False,
+    draw_cont=False,
+):
     # preprocess img
     if shadow_free:
         no_shadow_img = de_shadow(bgr_image)
@@ -70,22 +77,27 @@ def get_contours(bgr_image, canny_threshold=(100, 200), min_area=500, shadow_fre
     dilate_img = cv2.dilate(canny_img, kernel, iterations=3)
     erode_img = cv2.erode(dilate_img, kernel, iterations=2)
     if show_canny:
-        cv2.imshow('Cany edge dectection', cv2.resize(erode_img, None, fx=0.35, fy=0.35, interpolation=cv2.INTER_AREA))
+        cv2.imshow(
+            "Cany edge dectection",
+            cv2.resize(erode_img, None, fx=0.35, fy=0.35, interpolation=cv2.INTER_AREA),
+        )
     # find contours
-    contours, _ = cv2.findContours(erode_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        erode_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
     final_contours = []
     for cont in contours:
         area = cv2.contourArea(cont)
         if area > min_area:
             peri = cv2.arcLength(cont, closed=True)
-            approx_corners = cv2.approxPolyDP(cont, 0.02*peri, closed=True)
+            approx_corners = cv2.approxPolyDP(cont, 0.02 * peri, closed=True)
             bbox = cv2.boundingRect(approx_corners)
             if len(approx_corners) == 4:
                 final_contours.append((area, approx_corners, bbox, cont))
-    final_contours = sorted(final_contours, key=lambda x:x[0], reverse=True)
+    final_contours = sorted(final_contours, key=lambda x: x[0], reverse=True)
     if draw_cont:
         for cont in final_contours:
-            cv2.drawContours(bgr_image, cont[3], -1, (0 ,0, 255), 7)
+            cv2.drawContours(bgr_image, cont[3], -1, (0, 0, 255), 7)
     return final_contours
 
 
@@ -111,9 +123,9 @@ def warp_image(img, corner_points, width, height, pad=10):
     matrix = cv2.getPerspectiveTransform(pts1, pts2)
     # warping perspective
     warp_img = cv2.warpPerspective(img, matrix, (width, height))
-    warp_img = warp_img[pad:warp_img.shape[0] - pad, pad:warp_img.shape[1] - pad]
+    warp_img = warp_img[pad : warp_img.shape[0] - pad, pad : warp_img.shape[1] - pad]
     return warp_img
 
 
 def calculate_distance(pts1, pst2):
-    return ((pst2[0] - pts1[0])**2 + (pst2[1] - pts1[1])**2)**0.5
+    return ((pst2[0] - pts1[0]) ** 2 + (pst2[1] - pts1[1]) ** 2) ** 0.5
