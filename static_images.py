@@ -79,4 +79,3 @@ for path in os.listdir("test_images"):
     cv2.imshow("test", display_test)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    
